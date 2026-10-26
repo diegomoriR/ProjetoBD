@@ -1,0 +1,6 @@
+DROP TABLE ON CASCADE;
+
+CREATE TABLE Iniciativa (
+	id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	nome varchar
+);
