@@ -1,149 +1,424 @@
-DROP TABLE Iniciativa;
-DROP TABLE Evento;
-DROP TABLE Promotor;
-DROP TABLE Pessoa; 
-DROP TABLE Organizacao;
-DROP TABLE Espaco;
-DROP TABLE Promove;
-DROP TABLE Recurso;
-DROP TABLE Atividade;
-DROP TABLE Inscricao;
-DROP TABLE Sessao;
-DROP TABLE Atua_em;
-DROP TABLE Requer;
-DROP TABLE Dispoe;
-DROP TABLE Inscricao_sessao;
-DROP TABLE Historico_sessao;
+-- ============================================================
+-- Limpeza
+-- ============================================================
+DROP TABLE IF EXISTS
+    Historico_sessao, Inscricao_sessao, Dispoe, Requer, Atua_Em,
+    Sessao, Inscricao, Atividade, Recurso, Promove, Espaco,
+    Organizacao, Pessoa, Promotor, Evento, Iniciativa
+CASCADE;
 
+DROP FUNCTION IF EXISTS fn_sessao_conflito_espaco();
+DROP FUNCTION IF EXISTS fn_sessao_vagas_capacidade();
+DROP FUNCTION IF EXISTS fn_sessao_recursos();
+DROP FUNCTION IF EXISTS fn_sessao_historico();
+DROP FUNCTION IF EXISTS fn_inscricao_sessao_vaga();
+DROP FUNCTION IF EXISTS fn_promove_lista_espera();
+
+-- ============================================================
+-- Tabelas
+-- ============================================================
 CREATE TABLE Iniciativa (
-	iniciativa_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	nome varchar
+    iniciativa_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome varchar(150) NOT NULL,
+    CONSTRAINT uq_iniciativa_nome UNIQUE (nome)
 );
 
 CREATE TABLE Evento (
-	evento_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	iniciativa_id integer NOT NULL,
-	edicao varchar,
-	data_inicio date,
-	data_fim date,
-	CONSTRAINT fk_iniciativa_id FOREIGN KEY (iniciativa_id) REFERENCES Iniciativa(iniciativa_id) ON DELETE CASCADE
+    evento_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    iniciativa_id integer NOT NULL,
+    edicao varchar(50) NOT NULL,
+    data_inicio date NOT NULL,
+    data_fim date NOT NULL,
+    CONSTRAINT fk_iniciativa_id FOREIGN KEY (iniciativa_id)
+        REFERENCES Iniciativa(iniciativa_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT uq_evento_edicao UNIQUE (iniciativa_id, edicao),
+    CONSTRAINT ck_evento_periodo CHECK (data_fim >= data_inicio)
 );
 
 CREATE TABLE Promotor (
-	promotor_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	email varchar
+    promotor_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    email varchar(150) NOT NULL,
+    CONSTRAINT uq_promotor_email UNIQUE (email)
 );
 
 CREATE TABLE Pessoa (
-	promotor_id integer,
-	CPF varchar,
-	nome varchar,
-	CONSTRAINT pk_pessoa PRIMARY KEY(promotor_id),
-	CONSTRAINT fk_pessoa_id FOREIGN KEY(promotor_id) REFERENCES Promotor(promotor_id) ON DELETE CASCADE,
-	CONSTRAINT uq_CPF UNIQUE(CPF)
+    promotor_id integer,
+    CPF varchar(11) NOT NULL,
+    nome varchar(150) NOT NULL,
+    CONSTRAINT pk_pessoa PRIMARY KEY (promotor_id),
+    CONSTRAINT fk_pessoa_id FOREIGN KEY (promotor_id)
+        REFERENCES Promotor(promotor_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT uq_CPF UNIQUE (CPF),
+    CONSTRAINT ck_pessoa_cpf CHECK (CPF ~ '^[0-9]{11}$')
 );
 
 CREATE TABLE Organizacao (
-	promotor_id integer,
-	CNPJ varchar,
-	razao_social varchar,
-	CONSTRAINT pk_organizacao PRIMARY KEY(promotor_id),
-	CONSTRAINT fk_organizacao_id FOREIGN KEY(promotor_id) REFERENCES Promotor(promotor_id) ON DELETE CASCADE,
-	CONSTRAINT uq_CNPJ UNIQUE(CNPJ)
+    promotor_id integer,
+    CNPJ varchar(14) NOT NULL,
+    razao_social varchar(200) NOT NULL,
+    CONSTRAINT pk_organizacao PRIMARY KEY (promotor_id),
+    CONSTRAINT fk_organizacao_id FOREIGN KEY (promotor_id)
+        REFERENCES Promotor(promotor_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT uq_CNPJ UNIQUE (CNPJ),
+    CONSTRAINT ck_organizacao_cnpj CHECK (CNPJ ~ '^[0-9]{14}$')
 );
 
 CREATE TABLE Espaco (
-	espaco_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	nome varchar NOT NULL,
-	capacidade integer NOT NULL
+    espaco_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome varchar(100) NOT NULL,
+    capacidade integer NOT NULL,
+    CONSTRAINT uq_espaco_nome UNIQUE (nome),
+    CONSTRAINT ck_espaco_capacidade CHECK (capacidade > 0)
 );
 
 CREATE TABLE Promove (
-	evento_id integer,
-	promotor_id integer,
-	papel varchar NOT NULL,
-	CONSTRAINT pk_promove PRIMARY KEY(evento_id, promotor_id),
-	CONSTRAINT fk_evento_id FOREIGN KEY(evento_id) REFERENCES Evento(evento_id) ON DELETE CASCADE,
-	CONSTRAINT fk_promotor_id FOREIGN KEY(promotor_id) REFERENCES Promotor(promotor_id) ON DELETE CASCADE
+    evento_id integer,
+    promotor_id integer,
+    papel varchar(50) NOT NULL DEFAULT 'promotor',
+    CONSTRAINT pk_promove PRIMARY KEY (evento_id, promotor_id),
+    CONSTRAINT fk_evento_id FOREIGN KEY (evento_id)
+        REFERENCES Evento(evento_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_promotor_id FOREIGN KEY (promotor_id)
+        REFERENCES Promotor(promotor_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Recurso (
-	recurso_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	nome varchar NOT NULL
+    recurso_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    nome varchar(100) NOT NULL,
+    CONSTRAINT uq_recurso_nome UNIQUE (nome)
 );
 
 CREATE TABLE Atividade (
-	atividade_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	evento_id integer,
-	titulo varchar,
-	tipo varchar,
-	exige_inscricao boolean,
-	funcao_organizacao varchar,
-	CONSTRAINT fk_evento_atividade FOREIGN KEY (evento_id) REFERENCES Evento(evento_id)
+    atividade_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    evento_id integer NOT NULL,
+    titulo varchar(200) NOT NULL,
+    tipo varchar(50) NOT NULL,
+    exige_inscricao boolean NOT NULL DEFAULT false,
+    funcao_organizacao varchar(100),
+    CONSTRAINT fk_evento_atividade FOREIGN KEY (evento_id)
+        REFERENCES Evento(evento_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Inscricao (
-	inscricao_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	evento_id integer,
-	status varchar,
-	CONSTRAINT fk_inscricao_evento FOREIGN KEY (evento_id) REFERENCES Evento(evento_id) 
+    inscricao_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    evento_id integer NOT NULL,
+    status varchar(20) NOT NULL DEFAULT 'confirmada',
+    CONSTRAINT fk_inscricao_evento FOREIGN KEY (evento_id)
+        REFERENCES Evento(evento_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT ck_inscricao_status CHECK (status IN ('confirmada', 'cancelada'))
 );
 
 CREATE TABLE Sessao (
-	sessao_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	atividade_id integer,
-	espaco_id integer,
-	inicio date,
-	fim date,
-	vagas integer,
-	status varchar,
-	CONSTRAINT fk_sessao_atividade FOREIGN KEY (atividade_id) REFERENCES Atividade(atividade_id),
-	CONSTRAINT fk_sessao_espaco FOREIGN KEY (espaco_id) REFERENCES Espaco(espaco_id)
+    sessao_id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    atividade_id integer NOT NULL,
+    espaco_id integer NOT NULL,
+    inicio timestamp NOT NULL,
+    fim timestamp NOT NULL,
+    vagas integer,
+    status varchar(20) NOT NULL DEFAULT 'agendada',
+    CONSTRAINT fk_sessao_atividade FOREIGN KEY (atividade_id)
+        REFERENCES Atividade(atividade_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_sessao_espaco FOREIGN KEY (espaco_id)
+        REFERENCES Espaco(espaco_id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT ck_sessao_horario CHECK (fim > inicio),
+    CONSTRAINT ck_sessao_vagas CHECK (vagas IS NULL OR vagas > 0),
+    CONSTRAINT ck_sessao_status CHECK (status IN ('agendada', 'realizada', 'cancelada'))
 );
 
 CREATE TABLE Atua_Em (
-	pessoa_id integer,
-	atividade_id integer,
-	funcao varchar,
-	CONSTRAINT pk_atuaem PRIMARY KEY (pessoa_id, atividade_id),
-	CONSTRAINT fk_atua_pessoa FOREIGN KEY (pessoa_id) REFERENCES Pessoa(promotor_id),
-	CONSTRAINT fk_atua_atividade FOREIGN KEY (atividade_id) REFERENCES Atividade(atividade_id)
+    pessoa_id integer,
+    atividade_id integer,
+    funcao varchar(50) NOT NULL,
+    CONSTRAINT pk_atuaem PRIMARY KEY (pessoa_id, atividade_id),
+    CONSTRAINT fk_atua_pessoa FOREIGN KEY (pessoa_id)
+        REFERENCES Pessoa(promotor_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_atua_atividade FOREIGN KEY (atividade_id)
+        REFERENCES Atividade(atividade_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Requer (
-	atividade_id integer,
-	recurso_id integer,
-	CONSTRAINT pk_requer PRIMARY KEY (atividade_id, recurso_id),
-	CONSTRAINT fk_requer_atividade FOREIGN KEY (atividade_id) REFERENCES Atividade(atividade_id),
-	CONSTRAINT fk_requer_recurso FOREIGN KEY (recurso_id) REFERENCES Recurso(recurso_id)
+    atividade_id integer,
+    recurso_id integer,
+    CONSTRAINT pk_requer PRIMARY KEY (atividade_id, recurso_id),
+    CONSTRAINT fk_requer_atividade FOREIGN KEY (atividade_id)
+        REFERENCES Atividade(atividade_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_requer_recurso FOREIGN KEY (recurso_id)
+        REFERENCES Recurso(recurso_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE Dispoe (
-	espaco_id integer,
-	recurso_id integer,
-	quantidade integer,
-	CONSTRAINT pk_dispoe PRIMARY KEY (espaco_id, recurso_id),
-	CONSTRAINT fk_dispoe_espaco FOREIGN KEY (espaco_id) REFERENCES Espaco(espaco_id),
-	CONSTRAINT fk_dispoe_recurso FOREIGN KEY (recurso_id) REFERENCES Recurso(recurso_id)
+    espaco_id integer,
+    recurso_id integer,
+    quantidade integer NOT NULL DEFAULT 1,
+    CONSTRAINT pk_dispoe PRIMARY KEY (espaco_id, recurso_id),
+    CONSTRAINT fk_dispoe_espaco FOREIGN KEY (espaco_id)
+        REFERENCES Espaco(espaco_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_dispoe_recurso FOREIGN KEY (recurso_id)
+        REFERENCES Recurso(recurso_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT ck_dispoe_quantidade CHECK (quantidade > 0)
 );
 
 CREATE TABLE Inscricao_sessao (
-	inscricao_id integer,
-	sessao_id integer,
-	status varchar,
-	posicao_espera integer,
-	CONSTRAINT pk_inscricao_sessao PRIMARY KEY (inscricao_id, sessao_id),
-	CONSTRAINT fk_IS_inscricao FOREIGN KEY (inscricao_id) REFERENCES Inscricao(inscricao_id),
-	CONSTRAINT fk_IS_sessao FOREIGN KEY (sessao_id) REFERENCES Sessao(sessao_id)
+    inscricao_id integer,
+    sessao_id integer,
+    status varchar(20) NOT NULL DEFAULT 'confirmada',
+    posicao_espera integer,
+    CONSTRAINT pk_inscricao_sessao PRIMARY KEY (inscricao_id, sessao_id),
+    CONSTRAINT fk_IS_inscricao FOREIGN KEY (inscricao_id)
+        REFERENCES Inscricao(inscricao_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_IS_sessao FOREIGN KEY (sessao_id)
+        REFERENCES Sessao(sessao_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT ck_IS_status CHECK (status IN ('confirmada', 'lista_espera', 'cancelada')),
+    CONSTRAINT ck_IS_posicao CHECK (posicao_espera IS NULL OR posicao_espera > 0),
+    CONSTRAINT ck_IS_espera CHECK ((status = 'lista_espera') = (posicao_espera IS NOT NULL))
 );
 
 CREATE TABLE Historico_sessao (
-	id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-	sessao_id integer,
-	espaco_ant integer,
-	inicio_ant date,
-	fim_ant date,
-	alterado_em date,
-	CONSTRAINT fk_hs_sessao FOREIGN KEY (sessao_id) REFERENCES Sessao(sessao_id),
-	CONSTRAINT fk_hs_espaco FOREIGN KEY (espaco_ant) REFERENCES Espaco(espaco_id)
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    sessao_id integer NOT NULL,
+    espaco_ant integer NOT NULL,
+    inicio_ant timestamp NOT NULL,
+    fim_ant timestamp NOT NULL,
+    alterado_em timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_hs_sessao FOREIGN KEY (sessao_id)
+        REFERENCES Sessao(sessao_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_hs_espaco FOREIGN KEY (espaco_ant)
+        REFERENCES Espaco(espaco_id) ON DELETE RESTRICT ON UPDATE CASCADE
 );
+
+-- ============================================================
+-- Triggers e funções
+-- ============================================================
+
+-- T1: impede duas sessões não canceladas sobrepostas no mesmo espaço
+CREATE FUNCTION fn_sessao_conflito_espaco() RETURNS trigger AS $$
+BEGIN
+    IF NEW.status = 'cancelada' THEN
+        RETURN NEW;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM Sessao s
+        WHERE s.espaco_id = NEW.espaco_id
+          AND s.status <> 'cancelada'
+          AND s.inicio < NEW.fim
+          AND s.fim > NEW.inicio
+          AND (TG_OP = 'INSERT' OR s.sessao_id <> NEW.sessao_id)
+    ) THEN
+        RAISE EXCEPTION 'Conflito: o espaco % ja possui sessao no intervalo % a %',
+            NEW.espaco_id, NEW.inicio, NEW.fim;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sessao_conflito_espaco
+BEFORE INSERT OR UPDATE ON Sessao
+FOR EACH ROW EXECUTE FUNCTION fn_sessao_conflito_espaco();
+
+-- T2: o limite de vagas da sessão não pode exceder a capacidade física do espaço
+CREATE FUNCTION fn_sessao_vagas_capacidade() RETURNS trigger AS $$
+DECLARE
+    v_capacidade integer;
+BEGIN
+    IF NEW.vagas IS NOT NULL THEN
+        SELECT capacidade INTO v_capacidade
+        FROM Espaco
+        WHERE espaco_id = NEW.espaco_id;
+
+        IF NEW.vagas > v_capacidade THEN
+            RAISE EXCEPTION 'Vagas (%) excedem a capacidade do espaco (%)',
+                NEW.vagas, v_capacidade;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sessao_vagas_capacidade
+BEFORE INSERT OR UPDATE ON Sessao
+FOR EACH ROW EXECUTE FUNCTION fn_sessao_vagas_capacidade();
+
+-- T3: o espaço deve dispor de todos os recursos requeridos pela atividade
+CREATE FUNCTION fn_sessao_recursos() RETURNS trigger AS $$
+BEGIN
+    IF NEW.status = 'cancelada' THEN
+        RETURN NEW;
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM Requer r
+        WHERE r.atividade_id = NEW.atividade_id
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Dispoe d
+              WHERE d.espaco_id = NEW.espaco_id
+                AND d.recurso_id = r.recurso_id
+          )
+    ) THEN
+        RAISE EXCEPTION 'O espaco % nao dispoe de todos os recursos requeridos pela atividade %',
+            NEW.espaco_id, NEW.atividade_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sessao_recursos
+BEFORE INSERT OR UPDATE ON Sessao
+FOR EACH ROW EXECUTE FUNCTION fn_sessao_recursos();
+
+-- T4: registra em Historico_sessao a programação anterior quando espaço ou horário mudam
+CREATE FUNCTION fn_sessao_historico() RETURNS trigger AS $$
+BEGIN
+    INSERT INTO Historico_sessao (sessao_id, espaco_ant, inicio_ant, fim_ant)
+    VALUES (OLD.sessao_id, OLD.espaco_id, OLD.inicio, OLD.fim);
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sessao_historico
+AFTER UPDATE ON Sessao
+FOR EACH ROW
+WHEN (OLD.espaco_id IS DISTINCT FROM NEW.espaco_id
+      OR OLD.inicio IS DISTINCT FROM NEW.inicio
+      OR OLD.fim IS DISTINCT FROM NEW.fim)
+EXECUTE FUNCTION fn_sessao_historico();
+
+-- T5: valida a inscrição em sessão e decide entre vaga confirmada e lista de espera
+CREATE FUNCTION fn_inscricao_sessao_vaga() RETURNS trigger AS $$
+DECLARE
+    v_sessao_status varchar;
+    v_vagas integer;
+    v_atividade integer;
+    v_exige boolean;
+    v_evento_atividade integer;
+    v_evento_inscricao integer;
+    v_status_inscricao varchar;
+    v_ocupadas integer;
+    v_posicao integer;
+BEGIN
+    -- trava a sessão para serializar inscrições concorrentes
+    SELECT status, vagas, atividade_id
+      INTO v_sessao_status, v_vagas, v_atividade
+    FROM Sessao
+    WHERE sessao_id = NEW.sessao_id
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Sessao % inexistente', NEW.sessao_id;
+    END IF;
+
+    IF v_sessao_status = 'cancelada' THEN
+        RAISE EXCEPTION 'Sessao % cancelada: inscricao nao permitida', NEW.sessao_id;
+    END IF;
+
+    SELECT exige_inscricao, evento_id
+      INTO v_exige, v_evento_atividade
+    FROM Atividade
+    WHERE atividade_id = v_atividade;
+
+    IF NOT v_exige THEN
+        RAISE EXCEPTION 'A atividade da sessao % nao exige inscricao adicional', NEW.sessao_id;
+    END IF;
+
+    SELECT evento_id, status
+      INTO v_evento_inscricao, v_status_inscricao
+    FROM Inscricao
+    WHERE inscricao_id = NEW.inscricao_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Inscricao % inexistente', NEW.inscricao_id;
+    END IF;
+
+    IF v_status_inscricao = 'cancelada' THEN
+        RAISE EXCEPTION 'Inscricao % cancelada no evento', NEW.inscricao_id;
+    END IF;
+
+    IF v_evento_inscricao <> v_evento_atividade THEN
+        RAISE EXCEPTION 'Inscricao % pertence a outro evento', NEW.inscricao_id;
+    END IF;
+
+    SELECT COUNT(*) INTO v_ocupadas
+    FROM Inscricao_sessao
+    WHERE sessao_id = NEW.sessao_id
+      AND status = 'confirmada';
+
+    IF v_vagas IS NULL OR v_ocupadas < v_vagas THEN
+        NEW.status := 'confirmada';
+        NEW.posicao_espera := NULL;
+    ELSE
+        SELECT COALESCE(MAX(posicao_espera), 0) + 1 INTO v_posicao
+        FROM Inscricao_sessao
+        WHERE sessao_id = NEW.sessao_id
+          AND status = 'lista_espera';
+
+        NEW.status := 'lista_espera';
+        NEW.posicao_espera := v_posicao;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_inscricao_sessao_vaga
+BEFORE INSERT ON Inscricao_sessao
+FOR EACH ROW EXECUTE FUNCTION fn_inscricao_sessao_vaga();
+
+-- T6: ao liberar uma vaga confirmada, promove o primeiro da lista de espera
+CREATE FUNCTION fn_promove_lista_espera() RETURNS trigger AS $$
+DECLARE
+    v_status_sessao varchar;
+    v_proximo integer;
+BEGIN
+    IF OLD.status <> 'confirmada' THEN
+        RETURN NULL;
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.status = 'confirmada' THEN
+            RETURN NULL;
+        END IF;
+    END IF;
+
+    SELECT status INTO v_status_sessao
+    FROM Sessao
+    WHERE sessao_id = OLD.sessao_id;
+
+    -- sessão removida (exclusão em cascata) ou cancelada: nada a promover
+    IF NOT FOUND OR v_status_sessao = 'cancelada' THEN
+        RETURN NULL;
+    END IF;
+
+    SELECT inscricao_id INTO v_proximo
+    FROM Inscricao_sessao
+    WHERE sessao_id = OLD.sessao_id
+      AND status = 'lista_espera'
+    ORDER BY posicao_espera
+    LIMIT 1
+    FOR UPDATE;
+
+    IF FOUND THEN
+        UPDATE Inscricao_sessao
+        SET status = 'confirmada', posicao_espera = NULL
+        WHERE inscricao_id = v_proximo
+          AND sessao_id = OLD.sessao_id;
+
+        UPDATE Inscricao_sessao
+        SET posicao_espera = posicao_espera - 1
+        WHERE sessao_id = OLD.sessao_id
+          AND status = 'lista_espera';
+    END IF;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_promove_lista_espera
+AFTER UPDATE OR DELETE ON Inscricao_sessao
+FOR EACH ROW EXECUTE FUNCTION fn_promove_lista_espera();
