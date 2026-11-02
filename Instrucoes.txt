@@ -1,0 +1,145 @@
+============================================================
+SCC0640 - PROJETO DE BASES DE DADOS
+============================================================
+
+INSTRUCOES DE INSTALACAO E EXECUCAO
+
+============================================================
+1. INTEGRANTES
+============================================================
+Diego Mori Rodrigues - 13782421
+Guilherme Rugai Freire - 6522087
+Henrique Pastore - 9878635
+Matheus Soares Falango - 15479691
+Pedro Avelar Machado - 15497396
+
+============================================================
+2. REQUISITOS DE SOFTWARE
+============================================================
+- Python 3.11 ou superior
+- PostgreSQL [PREENCHER: versao utilizada/testada]
+- Ollama (execucao local do modelo de linguagem)
+- Modelo do Ollama: qwen2.5-coder:7b
+- Bibliotecas Python (instaladas pelo requirements.txt):
+    ollama
+    psycopg[binary]
+
+============================================================
+3. CRIACAO DA BASE DE DADOS
+============================================================
+3.1. Crie um banco vazio no PostgreSQL com o nome "eventos"
+     (o mesmo nome que consta em Prototipo/config.json):
+
+     psql -U postgres -c "CREATE DATABASE eventos;"
+
+3.2. Abra o arquivo Projeto.txt e copie todo o conteudo da secao
+     "3. DDL COMPLETO", isto e, o trecho entre o titulo
+     "3. DDL COMPLETO" e o titulo "4. CONSULTAS" (sem incluir
+     os dois titulos).
+
+3.3. Execute o trecho copiado no banco "eventos", por exemplo:
+     - no pgAdmin: Query Tool conectada ao banco "eventos";
+     - ou no psql, salvando o trecho em um arquivo (ex.: ddl.sql)
+       e executando:
+
+       psql -U postgres -d eventos -f ddl.sql
+
+     O DDL inicia com comandos DROP TABLE IF EXISTS, portanto pode
+     ser reexecutado para recriar as estruturas do zero.
+
+     [PREENCHER: observacoes adicionais sobre o DDL, se houver]
+
+============================================================
+4. EXECUCAO DO DML (CARGA DE DADOS)
+============================================================
+Com o DDL ja executado, popule o banco com o arquivo DML.sql:
+
+     psql -U postgres -d eventos -f DML.sql
+
+(ou abra o DML.sql no Query Tool do pgAdmin e execute).
+
+[PREENCHER: ordem de execucao e observacoes sobre o DML.sql,
+ quando o arquivo estiver pronto]
+
+============================================================
+5. EXECUCAO DO PROTOTIPO
+============================================================
+5.1. Descompacte Prototipo.zip. Mantenha a estrutura de pastas:
+
+     (pasta do projeto)/
+     |-- Projeto.txt
+     `-- Prototipo/
+         |-- main.py
+         |-- config.json
+         `-- requirements.txt
+
+     O Projeto.txt deve estar na pasta imediatamente acima de
+     Prototipo/, pois o programa le dele o DDL e as consultas.
+
+5.2. Instale o modelo no Ollama e mantenha o servico em execucao
+     (por padrao em http://localhost:11434):
+
+     ollama pull qwen2.5-coder:7b
+
+5.3. Instale as dependencias, dentro da pasta Prototipo:
+
+     python -m pip install -r requirements.txt
+
+5.4. Edite apenas o arquivo config.json, ajustando se necessario
+     os dados de conexao com o PostgreSQL e o endereco do Ollama:
+
+     {
+       "database": {
+         "host": "localhost",
+         "port": 5432,
+         "dbname": "eventos",
+         "user": "postgres",
+         "password": "postgres"
+       },
+       "ollama": {
+         "host": "http://localhost:11434",
+         "model": "qwen2.5-coder:7b"
+       }
+     }
+
+5.5. Execute:
+
+     python main.py
+
+5.6. Uso do programa:
+     - Ao iniciar, o programa exibe os parametros de conexao lidos
+       do config.json e permite altera-los (Enter mantem o valor
+       atual).
+     - Menu principal:
+         1. Executar as consultas do projeto (5 consultas
+            definidas na secao 4 do Projeto.txt).
+         2. Fazer uma pergunta em linguagem natural: o modelo local
+            do Ollama converte a pergunta em SQL, o programa
+            executa a consulta e exibe o resultado ou uma mensagem
+            de erro.
+         0. Sair.
+
+     [PREENCHER: exemplos de perguntas em linguagem natural que
+      funcionam bem com o sistema]
+
+============================================================
+6. MODELO UTILIZADO NO OLLAMA
+============================================================
+qwen2.5-coder:7b
+
+============================================================
+7. LIMITACOES E FUNCIONALIDADES NAO CONCLUIDAS
+============================================================
+- A conexao do prototipo e somente leitura: consultas geradas pelo
+  modelo que tentem alterar dados sao rejeitadas.
+- A qualidade do SQL gerado depende do modelo local (qwen2.5-coder:7b);
+  perguntas ambiguas ou complexas podem gerar SQL incorreta. Nesse
+  caso o programa tenta corrigir uma vez a partir da mensagem de
+  erro e, se falhar, exibe o erro ao usuario.
+- Resultados com mais de 50 linhas sao exibidos parcialmente (o
+  total e informado).
+- [PREENCHER: demais limitacoes ou funcionalidades nao concluidas]
+
+============================================================
+FIM DO ARQUIVO
+============================================================

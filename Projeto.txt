@@ -11,7 +11,7 @@ Henrique Pastore - 9878635
 Matheus Soares Falango - 15479691
 Pedro Avelar Machado - 15497396
 
-MODELO UTILIZADO NO OLLAMA:
+MODELO UTILIZADO NO OLLAMA: qwen2.5-coder:7b
 
 ============================================================
 1. DESCRICAO FINAL DO SISTEMA

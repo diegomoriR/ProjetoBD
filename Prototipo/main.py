@@ -247,7 +247,7 @@ def montar_prompt(ddl, pergunta, sql_anterior=None, erro=None):
             f"\nA consulta anterior falhou.\nSQL anterior:\n{sql_anterior}\n"
             f"Erro: {erro}\nCorrija e responda apenas com a SQL.\n"
         )
-    prompt += "\nSQL:\n/no_think"
+    prompt += "\nSQL:\n"
     return prompt
 
 
