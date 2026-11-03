@@ -17,7 +17,7 @@ Pedro Avelar Machado - 15497396
 2. REQUISITOS DE SOFTWARE
 ============================================================
 - Python 3.11 ou superior
-- PostgreSQL [PREENCHER: versao utilizada/testada]
+- PostgreSQL 16.15
 - Ollama (execucao local do modelo de linguagem)
 - Modelo do Ollama: qwen2.5-coder:7b
 - Bibliotecas Python (instaladas pelo requirements.txt):
