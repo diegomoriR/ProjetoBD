@@ -137,7 +137,7 @@ Observacoes sobre o DML:
          0. Sair.
      - Exemplos de perguntas em linguagem natural:
          1. Quais sao as iniciativas cadastradas no sistema?
-         2. Qual a instituição do evento com maior numero de inscrições?
+         2. Qual evento com maior numero de inscrições?
          3. Quais os nomes dos espacos que possuem capacidade acima de 100 pessoas?
          4. Quantas sessoes estao canceladas?
 
