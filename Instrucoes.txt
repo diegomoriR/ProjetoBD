@@ -19,7 +19,7 @@ Pedro Avelar Machado - 15497396
 - Python 3.11 ou superior
 - PostgreSQL 16.15
 - Ollama (execucao local do modelo de linguagem)
-- Modelo do Ollama: qwen2.5-coder:7b
+- Modelo do Ollama: qwen2.5-coder:3b
 - Bibliotecas Python (instaladas pelo requirements.txt):
     ollama
     psycopg[binary]
@@ -79,7 +79,7 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
 5.2. Instale o modelo no Ollama e mantenha o servico em execucao
      (por padrao em http://localhost:11434):
 
-     ollama pull qwen2.5-coder:7b
+     ollama pull qwen2.5-coder:3b
 
 5.3. Instale as dependencias, dentro da pasta Prototipo:
 
@@ -98,7 +98,7 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
        },
        "ollama": {
          "host": "http://localhost:11434",
-         "model": "qwen2.5-coder:7b"
+         "model": "qwen2.5-coder:3b"
        }
      }
 
@@ -117,27 +117,32 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
             do Ollama converte a pergunta em SQL, o programa
             executa a consulta e exibe o resultado ou uma mensagem
             de erro.
-         0. Sair.
-
-     [PREENCHER: exemplos de perguntas em linguagem natural que
-      funcionam bem com o sistema]
+         0. Sair. 
+     - Exemplos de perguntas em linguagem natural que
+      funcionam bem com o sistema:
+      1. Quais são as iniciativas cadastrados no sistema?
+      2. Quais participantes nunca se inscreveram em um evento?
+      3. Qual é a média de participantes por evento?
+      4. Quais organizadores realizaram mais eventos?
 
 ============================================================
 6. MODELO UTILIZADO NO OLLAMA
 ============================================================
-qwen2.5-coder:7b
+qwen2.5-coder:3b
 
 ============================================================
 7. LIMITACOES E FUNCIONALIDADES NAO CONCLUIDAS
 ============================================================
 - A conexao do prototipo e somente leitura: consultas geradas pelo
   modelo que tentem alterar dados sao rejeitadas.
-- A qualidade do SQL gerado depende do modelo local (qwen2.5-coder:7b);
+- A qualidade do SQL gerado depende do modelo local (qwen2.5-coder:3b);
   perguntas ambiguas ou complexas podem gerar SQL incorreta. Nesse
   caso o programa tenta corrigir uma vez a partir da mensagem de
   erro e, se falhar, exibe o erro ao usuario.
 - Resultados com mais de 50 linhas sao exibidos parcialmente (o
   total e informado).
+- Na consulta 4, não há diferenciação explícita de que se foi alterado o
+  espaço da sessão exclusivamente.
 - [PREENCHER: demais limitacoes ou funcionalidades nao concluidas]
 
 ============================================================
