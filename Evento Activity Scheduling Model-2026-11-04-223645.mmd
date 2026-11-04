@@ -1,0 +1,133 @@
+erDiagram
+    direction TB
+
+    INICIATIVA {
+        int id PK
+        varchar nome
+    }
+
+    EVENTO {
+        int id PK
+        int iniciativa_id FK
+        varchar edicao
+        date data_inicio
+        date data_fim
+    }
+
+    INSCRICAO {
+        int id PK
+        int evento_id FK
+        varchar status
+    }
+
+    PROMOTOR {
+        int id PK
+        varchar email
+    }
+
+    ORGANIZACAO {
+        int promotor_id PK, FK
+        varchar CNPJ UK
+        varchar razao_social
+    }
+
+    PESSOA {
+        int promotor_id PK, FK
+        varchar CPF UK
+        varchar nome
+    }
+
+    ATIVIDADE {
+        int id PK
+        int evento_id FK
+        varchar titulo
+        varchar tipo
+        boolean exige_inscricao
+        varchar funcao_organizacao "Atributo do relacionamento organiza"
+    }
+
+    SESSAO {
+        int id PK
+        int atividade_id FK
+        int espaco_id FK
+        datetime inicio
+        datetime fim
+        int vagas
+        varchar status
+    }
+
+    ESPACO {
+        int id PK
+        varchar nome
+        int capacidade
+    }
+
+    RECURSO {
+        int id PK
+        varchar nome
+    }
+
+    HISTORICO_SESSAO {
+        int id PK
+        int sessao_id FK
+        int espaco_ant_id FK
+        datetime inicio_ant
+        datetime fim_ant
+        datetime alterado_em
+    }
+
+    PROMOVE {
+        int evento_id PK, FK
+        int promotor_id PK, FK
+        varchar papel
+    }
+
+    ATUA_EM {
+        int pessoa_id PK, FK "Referencia PESSOA.promotor_id"
+        int atividade_id PK, FK
+        varchar funcao
+    }
+
+    INSCRICAO_SESSAO {
+        int inscricao_id PK, FK
+        int sessao_id PK, FK
+        varchar status
+        int posicao_espera
+    }
+
+    REQUER {
+        int atividade_id PK, FK
+        int recurso_id PK, FK
+    }
+
+    DISPOE {
+        int espaco_id PK, FK
+        int recurso_id PK, FK
+        int quantidade
+    }
+
+    INICIATIVA ||..o{ EVENTO : "pertence - 1:N"
+    EVENTO ||..o{ INSCRICAO : "refere - 1:N"
+    EVENTO ||..o{ ATIVIDADE : "organiza - 1:N"
+    ATIVIDADE ||..o{ SESSAO : "realiza - 1:N"
+    ESPACO ||..o{ SESSAO : "ocorre_em - 1:N"
+    SESSAO ||..o{ HISTORICO_SESSAO : "registra - 1:N"
+    ESPACO ||..o{ HISTORICO_SESSAO : "espaco_ant - 1:N"
+
+    PROMOTOR ||--o| ORGANIZACAO : "especializacao disjunta"
+    PROMOTOR ||--o| PESSOA : "especializacao disjunta"
+
+    EVENTO ||--o{ PROMOVE : "1:N"
+    PROMOTOR ||--o{ PROMOVE : "1:N"
+
+    PESSOA ||--o{ ATUA_EM : "1:N"
+    ATIVIDADE ||--o{ ATUA_EM : "1:N"
+
+    INSCRICAO ||--o{ INSCRICAO_SESSAO : "1:N"
+    SESSAO ||--o{ INSCRICAO_SESSAO : "1:N"
+
+    ATIVIDADE ||--o{ REQUER : "1:N"
+    RECURSO ||--o{ REQUER : "1:N"
+
+    ESPACO ||--o{ DISPOE : "1:N"
+    RECURSO ||--o{ DISPOE : "1:N"
