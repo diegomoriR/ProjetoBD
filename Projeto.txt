@@ -17,7 +17,28 @@ MODELO UTILIZADO NO OLLAMA: qwen2.5-coder:3b
 1. DESCRICAO FINAL DO SISTEMA
 ============================================================
 
-[Descreva brevemente o sistema efetivamente implementado.]
+O sistema gerencia eventos e os espaços usados na sua realização, 
+sobre um banco PostgreSQL com 16 tabelas, 6 funções e 6 triggers. 
+Uma Iniciativa agrupa as edições recorrentes (Evento); cada edição 
+tem período próprio, promotores (pessoas ou organizações, vários 
+por evento, cada um com um papel), atividades e inscrições. Cada 
+Atividade (palestra, workshop, minicurso etc.) pode ter várias 
+Sessões, realizadas em um Espaço com data, horário, limite de vagas 
+e status (agendada, realizada ou cancelada). Os espaços têm capacidade 
+e recursos disponíveis, e as atividades podem requerer recursos. Pessoas 
+atuam nas atividades com uma função (palestrante, instrutor etc.). 
+A inscrição no evento dá acesso à programação geral; sessões de atividades 
+que exigem inscrição adicional têm vagas limitadas, lista de espera e 
+promoção automática do primeiro da fila quando uma vaga é liberada.
+
+Os triggers impedem sessões sobrepostas no mesmo espaço, vagas acima da 
+capacidade do espaço e espaços sem os recursos requeridos pela atividade; 
+controlam a confirmação, a lista de espera e a promoção nas inscrições em 
+sessões; e registram em Historico_sessao o espaço e o horário anteriores 
+a cada remarcação. O protótipo em Python (linha de comando) conecta ao banco, 
+executa as 5 consultas definidas neste arquivo e converte perguntas em 
+linguagem natural em SQL por meio de um modelo local do Ollama, exibindo o 
+resultado ou a mensagem de erro.
 
 ============================================================
 2. DECISOES DE PROJETO

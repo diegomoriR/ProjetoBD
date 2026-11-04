@@ -44,10 +44,13 @@ Pedro Avelar Machado - 15497396
 
        psql -U postgres -d eventos -f ddl.sql
 
-     O DDL inicia com comandos DROP TABLE IF EXISTS, portanto pode
-     ser reexecutado para recriar as estruturas do zero.
-
-     [PREENCHER: observacoes adicionais sobre o DDL, se houver]
+     Observacoes sobre o DDL:
+     - Cria 16 tabelas, 6 funcoes e 6 triggers (T1 a T6).
+     - Comeca com comandos DROP ... IF EXISTS; ao reexecutar, as
+       tabelas sao recriadas do zero e os dados existentes sao
+       apagados. Os avisos "does not exist, skipping" na primeira
+       execucao sao normais.
+     - Nao e necessario nenhum usuario ou extensao adicional.
 
 ============================================================
 4. EXECUCAO DO DML (CARGA DE DADOS)
@@ -58,8 +61,18 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
 
 (ou abra o DML.sql no Query Tool do pgAdmin e execute).
 
-[PREENCHER: ordem de execucao e observacoes sobre o DML.sql,
- quando o arquivo estiver pronto]
+Observacoes sobre o DML:
+- Execute sempre DEPOIS do DDL, pois os triggers precisam existir
+  para calcular status de inscricoes e historico de sessoes.
+- O script e executado em uma unica transacao (BEGIN ... COMMIT)
+  e comeca com TRUNCATE ... RESTART IDENTITY: pode ser
+  reexecutado, mas apaga todos os dados anteriores das tabelas.
+- Os identificadores sao informados explicitamente e as sequences
+  sao ajustadas no final do script.
+- No Windows, se os acentos aparecerem corrompidos, defina antes
+  a codificacao do cliente (PowerShell):
+
+     $env:PGCLIENTENCODING = "UTF8"
 
 ============================================================
 5. EXECUCAO DO PROTOTIPO
@@ -80,6 +93,10 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
      (por padrao em http://localhost:11434):
 
      ollama pull qwen2.5-coder:3b
+
+     Se o Ollama estiver rodando em Docker:
+
+     docker exec -it ollama ollama pull qwen2.5-coder:3b
 
 5.3. Instale as dependencias, dentro da pasta Prototipo:
 
@@ -117,13 +134,12 @@ Com o DDL ja executado, popule o banco com o arquivo DML.sql:
             do Ollama converte a pergunta em SQL, o programa
             executa a consulta e exibe o resultado ou uma mensagem
             de erro.
-         0. Sair. 
-     - Exemplos de perguntas em linguagem natural que
-      funcionam bem com o sistema:
-      1. Quais são as iniciativas cadastrados no sistema?
-      2. Quais participantes nunca se inscreveram em um evento?
-      3. Qual é a média de participantes por evento?
-      4. Quais organizadores realizaram mais eventos?
+         0. Sair.
+     - Exemplos de perguntas em linguagem natural:
+         1. Quais sao as iniciativas cadastradas no sistema?
+         2. Qual a instituição do evento com maior numero de inscrições?
+         3. Quais os nomes dos espacos que possuem capacidade acima de 100 pessoas?
+         4. Quantas sessoes estao canceladas?
 
 ============================================================
 6. MODELO UTILIZADO NO OLLAMA
@@ -141,9 +157,30 @@ qwen2.5-coder:3b
   erro e, se falhar, exibe o erro ao usuario.
 - Resultados com mais de 50 linhas sao exibidos parcialmente (o
   total e informado).
-- Na consulta 4, não há diferenciação explícita de que se foi alterado o
-  espaço da sessão exclusivamente.
-- [PREENCHER: demais limitacoes ou funcionalidades nao concluidas]
+- O prototipo nao possui telas de cadastro: insercoes e alteracoes
+  de dados sao feitas diretamente em SQL (por exemplo, pelo DML.sql).
+- Na consulta 4, nao ha diferenciacao explicita de que foi alterado
+  apenas o espaco da sessao; fica sob analise do usuario.
+- A tabela Inscricao registra o evento e o status, mas nao
+  identifica a pessoa inscrita (inscricoes anonimas). Perguntas
+  sobre participantes especificos nao podem ser respondidas.
+- O trigger de conflito (T1) considera apenas o espaco: o sistema
+  nao impede que a mesma pessoa atue em duas sessoes simultaneas,
+  nem que uma inscricao seja confirmada em duas sessoes no mesmo
+  horario.
+- Os triggers validam apenas ao inserir ou alterar a sessao:
+  mudar depois a capacidade de um espaco ou os recursos de um
+  espaco ou atividade nao revalida sessoes ja cadastradas. A
+  quantidade de recursos (Dispoe.quantidade) nao e comparada com
+  as vagas da sessao.
+- A data da sessao nao e validada contra o periodo do evento.
+- O historico (Historico_sessao) guarda apenas espaco e horario
+  anteriores; nao registra mudancas de vagas ou de status, nem o
+  motivo ou o autor da alteracao.
+- A lista de espera avanca somente quando uma inscricao confirmada
+  em sessao eh cancelada ou removida; aumentar Sessao.vagas nao
+  promove ninguem automaticamente, e cancelar a inscricao no
+  evento (Inscricao.status) nao cancela suas inscricoes em sessoes.
 
 ============================================================
 FIM DO ARQUIVO
